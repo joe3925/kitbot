@@ -35,6 +35,7 @@ import frc.team4276.frc2025.subsystems.drive.ModuleIOSpark;
 import frc.team4276.frc2025.subsystems.roller.Roller;
 import frc.team4276.frc2025.subsystems.roller.Roller.Goal;
 import frc.team4276.frc2025.subsystems.roller.RollerIO;
+import frc.team4276.frc2025.subsystems.roller.RollerIOSparkMax;
 import frc.team4276.frc2025.subsystems.superstructure.Superstructure;
 import frc.team4276.util.BetterXboxController;
 
@@ -83,8 +84,7 @@ public class RobotContainer {
                             new ModuleIOSpark(2),
                             new ModuleIOSpark(3));
 
-                    roller = new Roller(new RollerIO() {
-                    });
+                    roller = new Roller(new RollerIOSparkMax(Ports.ALGAE_INTAKE_ROLLER, 20, true, false));
                     break;
 
                 case SIM:
@@ -159,7 +159,7 @@ public class RobotContainer {
         drive.setDefaultCommand(
                 drive.run(
                         () -> drive.feedTeleopInput(
-                                keyboard0.getRawAxis(1), keyboard0.getRawAxis(0), keyboard2.getRawAxis(0))));
+                                driver.getLeftX(), -driver.getLeftY(), -driver.getRightX())));
 
         // Reset gyro to 0° when A button is pressed
         driver

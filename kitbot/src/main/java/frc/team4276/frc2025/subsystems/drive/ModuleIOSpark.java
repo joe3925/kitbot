@@ -13,41 +13,69 @@
 
 package frc.team4276.frc2025.subsystems.drive;
 
-import static frc.team4276.frc2025.subsystems.drive.DriveConstants.*;
-import static frc.team4276.util.SparkUtil.*;
+import java.util.Queue;
+import java.util.function.DoubleSupplier;
 
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
-import com.revrobotics.spark.SparkBase;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Rotation2d;
-import java.util.Queue;
-import java.util.function.DoubleSupplier;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backLeftDriveCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backLeftTurnCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backLeftZeroRotation;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backRightDriveCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backRightTurnCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.backRightZeroRotation;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveEncoderPositionFactor;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveEncoderVelocityFactor;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveKd;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveKp;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveKs;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveKv;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.driveMotorCurrentLimit;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontLeftDriveCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontLeftTurnCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontLeftZeroRotation;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontRightDriveCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontRightTurnCanId;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.frontRightZeroRotation;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.odometryFrequency;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnEncoderInverted;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnEncoderPositionFactor;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnEncoderVelocityFactor;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnInverted;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnKd;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnKp;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnMotorCurrentLimit;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnPIDMaxInput;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.turnPIDMinInput;
+import static frc.team4276.util.SparkUtil.ifOk;
+import static frc.team4276.util.SparkUtil.sparkStickyFault;
+import static frc.team4276.util.SparkUtil.tryUntilOk;
 
 /**
- * Module IO implementation for Spark Flex drive motor controller, Spark Max turn motor controller,
+ * Module IO implementation for Spark Max drive motor controller, Spark Max turn motor controller,
  * and duty cycle absolute encoder.
  */
 public class ModuleIOSpark implements ModuleIO {
   private final Rotation2d zeroRotation;
 
   // Hardware objects
-  private final SparkBase driveSpark;
-  private final SparkBase turnSpark;
+  private final SparkMax driveSpark;
+  private final SparkMax turnSpark;
   private final RelativeEncoder driveEncoder;
   private final AbsoluteEncoder turnEncoder;
 
@@ -74,7 +102,7 @@ public class ModuleIOSpark implements ModuleIO {
           default -> new Rotation2d();
         };
     driveSpark =
-        new SparkFlex(
+        new SparkMax(
             switch (module) {
               case 0 -> frontLeftDriveCanId;
               case 1 -> frontRightDriveCanId;
@@ -99,7 +127,7 @@ public class ModuleIOSpark implements ModuleIO {
     turnController = turnSpark.getClosedLoopController();
 
     // Configure drive motor
-    var driveConfig = new SparkFlexConfig();
+    var driveConfig = new SparkMaxConfig();
     driveConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(driveMotorCurrentLimit)
@@ -113,6 +141,7 @@ public class ModuleIOSpark implements ModuleIO {
     driveConfig
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .outputRange(-1.0, 1.0, ClosedLoopSlot.kSlot0)
         .pidf(
             driveKp, 0.0,
             driveKd, 0.0);
@@ -151,6 +180,7 @@ public class ModuleIOSpark implements ModuleIO {
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(turnPIDMinInput, turnPIDMaxInput)
+        .outputRange(-1.0, 1.0)
         .pidf(turnKp, 0.0, turnKd, 0.0);
     turnConfig
         .signals
