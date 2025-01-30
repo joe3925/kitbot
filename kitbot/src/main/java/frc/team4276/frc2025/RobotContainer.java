@@ -37,6 +37,11 @@ import frc.team4276.frc2025.subsystems.roller.Roller.Goal;
 import frc.team4276.frc2025.subsystems.roller.RollerIO;
 import frc.team4276.frc2025.subsystems.roller.RollerIOSparkMax;
 import frc.team4276.frc2025.subsystems.superstructure.Superstructure;
+import frc.team4276.frc2025.subsystems.vision.Vision;
+import frc.team4276.frc2025.subsystems.vision.VisionConstants;
+import frc.team4276.frc2025.subsystems.vision.VisionIO;
+import frc.team4276.frc2025.subsystems.vision.VisionIOPhotonVision;
+import frc.team4276.frc2025.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.team4276.util.BetterXboxController;
 
 /**
@@ -51,6 +56,7 @@ public class RobotContainer {
 
     private Drive drive;
     private Superstructure superstructure;
+    private Vision vision;
 
     @SuppressWarnings("unused")
 
@@ -85,6 +91,12 @@ public class RobotContainer {
                             new ModuleIOSpark(3));
 
                     roller = new Roller(new RollerIOSparkMax(Ports.ALGAE_INTAKE_ROLLER, 20, true, false));
+                              vision = new Vision(
+              RobotState.getInstance()::addVisionMeasurement,
+              new VisionIOPhotonVision(
+                  VisionConstants.camera0Name, VisionConstants.robotToCamera0),
+              new VisionIOPhotonVision(
+                  VisionConstants.camera1Name, VisionConstants.robotToCamera1));
                     break;
 
                 case SIM:
@@ -98,6 +110,16 @@ public class RobotContainer {
                             new ModuleIOSim());
                     roller = new Roller(new RollerIO() {
                     });
+          vision = new Vision(
+              RobotState.getInstance()::addVisionMeasurement,
+              new VisionIOPhotonVisionSim(
+                  VisionConstants.camera0Name,
+                  VisionConstants.robotToCamera0,
+                  RobotState.getInstance()::getEstimatedPose),
+              new VisionIOPhotonVisionSim(
+                  VisionConstants.camera1Name,
+                  VisionConstants.robotToCamera1,
+                  RobotState.getInstance()::getEstimatedPose));
                     break;
 
                 default:
@@ -115,6 +137,12 @@ public class RobotContainer {
                     });
                     roller = new Roller(new RollerIO() {
                     });
+                    vision = new Vision(
+                        RobotState.getInstance()::addVisionMeasurement,
+                        new VisionIO() {
+                        },
+                        new VisionIO() {
+                        });
             }
         }
 
