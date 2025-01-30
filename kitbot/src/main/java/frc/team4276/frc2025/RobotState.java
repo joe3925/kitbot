@@ -1,6 +1,6 @@
 package frc.team4276.frc2025;
 
-import static frc.team4276.frc2025.subsystems.drive.DriveConstants.kinematics;
+import org.littletonrobotics.junction.AutoLogOutput;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -11,7 +11,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.team4276.frc2025.field.FieldConstants;
-import org.littletonrobotics.junction.AutoLogOutput;
+import static frc.team4276.frc2025.subsystems.drive.DriveConstants.kinematics;
 
 public class RobotState {
   private SwerveModulePosition[] lastWheelPositions = new SwerveModulePosition[] {
@@ -33,7 +33,7 @@ public class RobotState {
 
   private static RobotState mInstance;
 
-  private boolean enableSimTrajPoseEstimation = true;
+  private boolean enableSimTrajPoseEstimation = false;
 
   public static RobotState getInstance() {
     if (mInstance == null) {

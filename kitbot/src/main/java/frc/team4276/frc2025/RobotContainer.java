@@ -148,6 +148,8 @@ public class RobotContainer {
 
         autoBuilder = new AutoBuilder(drive);
 
+        autoSelector.addRoutine("Test 2 Piece Choreo Traj", autoBuilder.TestChoreoTraj("2PieceTest"));
+
         // Set up SysId routines
         autoSelector.addRoutine(
                 "Drive Wheel Radius Characterization", new WheelRadiusCharacterization(drive));
@@ -187,7 +189,7 @@ public class RobotContainer {
         drive.setDefaultCommand(
                 drive.run(
                         () -> drive.feedTeleopInput(
-                                driver.getLeftX(), -driver.getLeftY(), -driver.getRightX())));
+                                -driver.getLeftWithDeadband().y, -driver.getLeftWithDeadband().x, driver.getRightWithDeadband().x)));
 
         // Reset gyro to 0° when A button is pressed
         driver
@@ -211,11 +213,6 @@ public class RobotContainer {
                                 .until(drive::isAutoAligned));
 
         driver
-                .rightBumper()
-                .onTrue(
-                        Commands.runOnce(() -> superstructure.scoreCommand()));
-
-        driver
                 .leftBumper()
                 .whileTrue(
                         Commands.startEnd(
@@ -234,7 +231,7 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autoBuilder.TestPPTraj("SimDemo");
+        return autoBuilder.TestChoreoTraj("2PieceTest");
         // new FeedForwardCharacterization(
         // drive, drive::runCharacterization, drive::getFFCharacterizationVelocity);
     }
